@@ -16,6 +16,8 @@ Open [the live game](https://chrisvonderau.github.io/flip-this-block/) or this f
 
 - Xbox controller: left stick to move, A to grab or drop, X to hold and work, Y to swap a second tool, Start to pause. You can plug a pad in after the game is already open. Two pads work in co-op and versus.
 - Keyboard: WASD, Space grab, and F work for the first person. Y or Q swaps a second tool. Arrow keys, Enter grab, and Right Shift work for the second. Esc pauses.
-- Touch: tap a room or tool station to walk there and work or grab. The on-screen stick remains as a fallback, and two-player split touch still uses sticks and buttons. On a wide tablet in versus, each person uses one half of the screen.
+- Touch: tap a room or tool station to walk there and work or grab. A dotted path and target ring show the route. In single-player touch the joystick is hidden (the Y button still appears with a tool belt). Two-player split touch still uses sticks and buttons.
+
+Your best stars and unlocked buildings are saved on this device. Use Choose a building to replay earlier levels.
 
 Made for a landscape iPhone, iPad, or MacBook, and readable when mirrored to a TV. Sound starts after the first tap or key.

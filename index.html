@@ -78,6 +78,16 @@ h2{margin:0 0 8px;font-size:clamp(22px,4vw,36px);color:var(--navy)}
 @media (max-width:700px){.shop-grid{grid-template-columns:1fr}.card{padding:18px}}
 .shop-item{border:3px solid var(--line);border-radius:16px;padding:12px;background:#fff}
 .shop-item h3{margin:0 0 4px;font-size:18px}
+.level-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:16px 0;text-align:left}
+@media (max-width:800px){.level-grid{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:520px){.level-grid{grid-template-columns:repeat(2,1fr)}}
+.level-card{appearance:none;border:3px solid var(--line);border-radius:16px;padding:10px 10px 8px;background:#fff;cursor:pointer;min-height:92px;font-weight:800;color:var(--navy);text-align:left;box-shadow:0 3px 0 #0001}
+.level-card .lv{display:block;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--teal)}
+.level-card .nm{display:block;font-size:14px;margin:2px 0 4px;line-height:1.15}
+.level-card small{display:block;font-weight:700;color:var(--muted);font-size:13px;letter-spacing:.08em}
+.level-card.on{outline:4px solid var(--sun);border-color:var(--sun)}
+.level-card.locked{opacity:.42;cursor:default;box-shadow:none}
+.level-card:active:not(.locked){transform:translateY(2px)}
 .float-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;font-size:clamp(48px,10vw,110px);font-weight:900;color:#fff;text-shadow:0 6px 0 #0006;opacity:0}
 </style>
 </head>
@@ -134,7 +144,20 @@ h2{margin:0 0 8px;font-size:clamp(22px,4vw,36px);color:var(--navy)}
       </div>
       <div class="row">
         <button class="btn navy" id="btn-setup-back">Back</button>
+        <button class="btn foam" id="btn-choose">Choose a building</button>
         <button class="btn big" id="btn-start">Start</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="screen-select" class="screen">
+    <div class="card">
+      <h2>Choose a building</h2>
+      <p class="tag">Replay any unlocked building and chase a better star rating. Your best stars are saved on this device.</p>
+      <div class="level-grid" id="level-grid"></div>
+      <div class="row">
+        <button class="btn navy" id="btn-select-back">Back</button>
+        <button class="btn big" id="btn-select-play">Play</button>
       </div>
     </div>
   </div>
@@ -239,6 +262,7 @@ h2{margin:0 0 8px;font-size:clamp(22px,4vw,36px);color:var(--navy)}
       <p class="tag" id="win-body">You rented the whole stretch.</p>
       <div class="row">
         <button class="btn big" id="btn-again">Play again</button>
+        <button class="btn foam" id="btn-win-choose">Choose a building</button>
         <button class="btn navy" id="btn-home">Home</button>
       </div>
     </div>
@@ -271,6 +295,9 @@ const $ = (id) => document.getElementById(id);
 let screen = "title", mode = "solo", soloKind = "off", aiSkill = "medium";
 let levelIndex = 0, timeLeft = 0, timeMax = 0, speedScale = 1;
 let cash = [0,0], totalRent = [0,0], campaignStars = [0,0];
+let bestStars = [Array(LEVELS.length).fill(0), Array(LEVELS.length).fill(0)];
+let unlockedLevels = 1, selectFocus = 0;
+const SAVE_KEY = "flipThisBlock.progress";
 let upgrades = [{boots:0,roller:0,tools:0,belt:0,vac:0},{boots:0,roller:0,tools:0,belt:0,vac:0}];
 let shopBuyer = 0, buildings = [], players = [], inspector = null;
 let particles = [], floaters = [], drops = [];
@@ -400,12 +427,13 @@ function show(name){
   $("screen-play").classList.remove("on");
   if(name === "play" || name === "pause" || name === "countdown") $("screen-play").classList.add("on");
   else {
-    const map = {title:"screen-title", mode:"screen-mode", setup:"screen-setup", results:"screen-results", shop:"screen-shop", win:"screen-win"};
+    const map = {title:"screen-title", mode:"screen-mode", setup:"screen-setup", select:"screen-select", results:"screen-results", shop:"screen-shop", win:"screen-win"};
     if(map[name]) $(map[name]).classList.add("on");
   }
   if(name === "pause") renderOverlay();
   else { $("overlay").classList.remove("on"); $("overlay").innerHTML = ""; }
   if(name === "shop") updateShop();
+  if(name === "select") updateLevelSelect();
   layoutTouch(); updateHud(); updatePadStatus(); needResize = true;
 }
 function renderOverlay(){
@@ -557,8 +585,15 @@ function resetCampaign(){
   cash = [0,0]; totalRent = [0,0]; campaignStars = [0,0];
   upgrades = [{boots:0,roller:0,tools:0,belt:0,vac:0},{boots:0,roller:0,tools:0,belt:0,vac:0}];
   levelIndex = 0;
+  saveProgress();
 }
 function startCampaign(){ resetCampaign(); startLevel(0, true); }
+function startSelectedLevel(){
+  if(selectFocus < 0 || selectFocus >= unlockedLevels){ sfx("no"); return false; }
+  resetCampaign();
+  startLevel(selectFocus, true);
+  return true;
+}
 function startLevel(n, withCount){
   levelIndex = Math.max(0, Math.min(LEVELS.length - 1, n|0));
   const L = LEVELS[levelIndex];
@@ -666,7 +701,7 @@ function hasKey(p){ return p && (p.tool === "key" || p.secondaryTool === "key");
 function nearLock(p){
   const b = buildings[p.side];
   if(!b || !b.locks) return null;
-  let best = null, bestD = 48;
+  let best = null, bestD = 54;
   for(const L of b.locks){
     if(L.open) continue;
     const d = Math.hypot(p.x - L.x, p.y - L.y);
@@ -855,7 +890,11 @@ function aiThink(p){
     }
   }
   let target = null;
-  const usable = open.filter((o) => matchingJob(o.room, p.tool, p));
+  let usable = open.filter((o) => matchingJob(o.room, p.tool, p));
+  if(!usable.length && p.secondaryTool){
+    const alt = open.filter((o) => matchingJob(o.room, p.secondaryTool, p));
+    if(alt.length){ swapTools(p); usable = alt; }
+  }
   if(usable.length){
     if(p.skill === "hard"){
       target = nearestMatch(usable.filter((o) => o.job.type === "leak"), p, human, b)
@@ -1011,7 +1050,8 @@ function sim(dt){
         if(ix) p.face = ix > 0 ? 1 : -1;
       }else if(p.path && p.path.length){
         followPath(p, dt);
-      }else if(p.autoGrab){
+      }
+      if(p.autoGrab && (!p.path || !p.path.length)){
         grabDrop(p);
         p.autoGrab = false;
       }
@@ -1076,6 +1116,10 @@ function endLevel(){
   const vs = isVersus();
   const s0 = starCount(0), s1 = vs ? starCount(1) : 0;
   campaignStars[0] += s0; campaignStars[1] += s1;
+  bestStars[0][levelIndex] = Math.max(bestStars[0][levelIndex] || 0, s0);
+  bestStars[1][levelIndex] = Math.max(bestStars[1][levelIndex] || 0, s1);
+  unlockedLevels = Math.max(unlockedLevels, Math.min(LEVELS.length, levelIndex + 2));
+  saveProgress();
   results = {stars:[s0, s1], rent:[totalRent[0], totalRent[1]], cash:[cash[0], cash[1]]};
   const title = $("res-title"), body = $("res-body"), st = $("res-stars");
   if(vs){
@@ -1187,22 +1231,125 @@ function updateHud(){
 }
 function layoutTouch(){
   const touch = $("touch");
-  const two = players.filter((p) => p.kind === "human").length >= 2;
-  const showT = wantTouch || (touchModeHint() && (screen === "play" || screen === "countdown" || screen === "pause"));
-  touch.classList.toggle("on", showT && (screen === "play" || screen === "countdown" || screen === "pause"));
+  const humans = players.filter((p) => p.kind === "human").length;
+  const two = humans >= 2;
+  const inPlay = (screen === "play" || screen === "countdown" || screen === "pause");
+  const showT = (wantTouch || touchModeHint()) && inPlay;
+  const belt0 = !!(upgrades[0] && upgrades[0].belt);
+  const soloTap = showT && humans === 1;
+  const showZone1 = showT && (two || belt0);
+  touch.classList.toggle("on", showT && (two || belt0));
   const split = showT && two;
   touch.classList.toggle("split", split);
+  $("zone-p1").hidden = !showZone1;
   $("zone-p2").hidden = !split;
   $("zone-p1").style.width = split ? "50%" : "100%";
+  for(const el of document.querySelectorAll("#zone-p1 .stick-base, #zone-p1 .tbtn.a, #zone-p1 .tbtn.x")) el.hidden = soloTap;
   for(const el of document.querySelectorAll(".tbtn.y")){
     const pid = +el.dataset.pid;
     const pl = players[pid];
-    const side = pl ? pl.side : 0;
-    el.hidden = !(showT && upgrades[side] && upgrades[side].belt);
+    const side = pl ? pl.side : (pid === 1 ? 1 : 0);
+    const hasBelt = !!(upgrades[side] && upgrades[side].belt);
+    if(pid === 1) el.hidden = !(split && hasBelt);
+    else el.hidden = !(showT && hasBelt);
   }
 }
 function touchModeHint(){ return wantTouch || ("ontouchstart" in window && Math.min(window.innerWidth, window.innerHeight) < 1200); }
 
+
+function clampInt(v, lo, hi, fallback){
+  const n = Number(v);
+  if(!Number.isFinite(n)) return fallback;
+  return Math.max(lo, Math.min(hi, Math.round(n)));
+}
+function defaultProgress(){
+  return {
+    campaignStars: [0, 0],
+    bestStars: [Array(LEVELS.length).fill(0), Array(LEVELS.length).fill(0)],
+    unlockedLevels: 1
+  };
+}
+function sanitizeProgress(data){
+  const d = defaultProgress();
+  if(!data || typeof data !== "object") return d;
+  if(Array.isArray(data.campaignStars)){
+    d.campaignStars[0] = clampInt(data.campaignStars[0], 0, 9999, 0);
+    d.campaignStars[1] = clampInt(data.campaignStars[1], 0, 9999, 0);
+  }
+  const sides = Array.isArray(data.bestStars) ? data.bestStars : [];
+  for(let s = 0; s < 2; s++){
+    const row = Array.isArray(sides[s]) ? sides[s] : [];
+    for(let i = 0; i < LEVELS.length; i++) d.bestStars[s][i] = clampInt(row[i], 0, 3, 0);
+  }
+  const unlocked = data.unlockedLevels != null ? data.unlockedLevels : data.unlocked;
+  d.unlockedLevels = clampInt(unlocked, 1, LEVELS.length, 1);
+  return d;
+}
+function saveProgress(){
+  try{
+    const payload = {
+      v: 1,
+      campaignStars: campaignStars.slice(),
+      bestStars: [bestStars[0].slice(), bestStars[1].slice()],
+      unlockedLevels
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+  }catch(err){}
+}
+function loadProgress(){
+  const d = defaultProgress();
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(raw) Object.assign(d, sanitizeProgress(JSON.parse(raw)));
+  }catch(err){}
+  campaignStars = d.campaignStars;
+  bestStars = d.bestStars;
+  unlockedLevels = d.unlockedLevels;
+  return d;
+}
+function goSelect(i){
+  if(i == null || i === "") selectFocus = Math.max(0, Math.min(unlockedLevels - 1, LEVELS.length - 1));
+  else selectFocus = clampInt(i, 0, LEVELS.length - 1, 0);
+  show("select");
+}
+function moveSelect(dx, dy){
+  const cols = levelSelectCols();
+  const n = LEVELS.length;
+  let i = selectFocus + dx + dy * cols;
+  i = Math.max(0, Math.min(n - 1, i));
+  if(i !== selectFocus){ selectFocus = i; updateLevelSelect(); sfx("grab"); }
+}
+function levelSelectCols(){
+  const grid = $("level-grid");
+  if(!grid) return 5;
+  const w = grid.clientWidth || window.innerWidth;
+  if(w < 520) return 2;
+  if(w < 800) return 3;
+  return 5;
+}
+function updateLevelSelect(){
+  const grid = $("level-grid");
+  if(!grid) return;
+  grid.innerHTML = LEVELS.map((L, i) => {
+    const locked = i >= unlockedLevels;
+    const stars = Math.max(bestStars[0][i] || 0, bestStars[1][i] || 0);
+    const vs = (bestStars[1][i] || 0) > 0;
+    const starLine = vs ? ("P1 " + starText(bestStars[0][i] || 0) + "  P2 " + starText(bestStars[1][i] || 0)) : (stars ? starText(stars) : "☆☆☆");
+    const cls = "level-card" + (i === selectFocus ? " on" : "") + (locked ? " locked" : "");
+    const label = locked ? "Locked" : starLine;
+    return '<button type="button" class="' + cls + '" data-level="' + i + '" ' + (locked ? "disabled" : "") + '><span class="lv">Lv ' + (i + 1) + '</span><span class="nm">' + L.name + '</span><small>' + label + '</small></button>';
+  }).join("");
+  for(const btn of grid.querySelectorAll(".level-card")){
+    btn.onclick = () => {
+      const i = +btn.dataset.level;
+      if(i >= unlockedLevels){ sfx("no"); return; }
+      if(selectFocus === i){ startSelectedLevel(); return; }
+      selectFocus = i; updateLevelSelect();
+    };
+  }
+  const play = $("btn-select-play");
+  if(play) play.disabled = selectFocus >= unlockedLevels;
+}
 
 
 function resize(){
@@ -1261,6 +1408,7 @@ function render(){
   const v = view();
   ctx.setTransform(v.scale, 0, 0, v.scale, v.ox, v.oy);
   for(const b of buildings) drawBuilding(b);
+  drawPathPreview();
   for(const d of drops){
     ctx.fillStyle = TOOL_COL[d.tool];
     ctx.beginPath(); ctx.arc(d.x, d.y, 7, 0, Math.PI * 2); ctx.fill();
@@ -1289,6 +1437,31 @@ function render(){
   }
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   updateGoMsg();
+}
+function drawPathPreview(){
+  if(!(wantTouch || touchModeHint())) return;
+  for(const p of players){
+    if(p.kind !== "human") continue;
+    if(!p.path || !p.path.length) continue;
+    const pts = [{x:p.x, y:p.y}].concat(p.path);
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,248,234,0.9)";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([8, 6]);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for(let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    const t = pts[pts.length - 1];
+    ctx.strokeStyle = "rgba(255,209,102,0.95)";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(t.x, t.y, 14, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(t.x, t.y, 6, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
 }
 function drawBuilding(b){
   ctx.fillStyle = "#5A4636";
@@ -1480,13 +1653,21 @@ function pollPads(){
     const a = !!(first.buttons[0] && first.buttons[0].pressed);
     const b = !!(first.buttons[1] && first.buttons[1].pressed);
     const st = !!((first.buttons[9] && first.buttons[9].pressed) || (first.buttons[8] && first.buttons[8].pressed));
+    const up = !!(first.buttons[12] && first.buttons[12].pressed) || (first.axes[1] || 0) < -0.6;
+    const dn = !!(first.buttons[13] && first.buttons[13].pressed) || (first.axes[1] || 0) > 0.6;
+    const lf = !!(first.buttons[14] && first.buttons[14].pressed) || (first.axes[0] || 0) < -0.6;
+    const rt = !!(first.buttons[15] && first.buttons[15].pressed) || (first.axes[0] || 0) > 0.6;
     if(a && !padUIPrev.a) menuConfirm();
     if(b && !padUIPrev.b) menuBack();
     if(st && !padUIPrev.st){
       if(screen !== "play" && screen !== "pause" && screen !== "countdown") menuConfirm();
     }
-    padUIPrev = {a, b, st};
-    if(a || b || st) unlock();
+    if(up && !padUIPrev.up) menuMove(0, -1);
+    if(dn && !padUIPrev.dn) menuMove(0, 1);
+    if(lf && !padUIPrev.lf) menuMove(-1, 0);
+    if(rt && !padUIPrev.rt) menuMove(1, 0);
+    padUIPrev = {a, b, st, up, dn, lf, rt};
+    if(a || b || st || up || dn || lf || rt) unlock();
   }else padUIPrev = {};
   if(screen === "play" && (padHold[0].start || padHold[1].start)) pause();
   else if(screen === "pause" && (padHold[0].start || padHold[1].start)) resume();
@@ -1496,6 +1677,7 @@ function menuConfirm(){
   if(screen === "title") goMode();
   else if(screen === "mode") goSetup(mode === "solo" ? "solo" : mode);
   else if(screen === "setup") startCampaign();
+  else if(screen === "select") startSelectedLevel();
   else if(screen === "countdown") skipIntro();
   else if(screen === "results") afterResults();
   else if(screen === "shop") nextLevel();
@@ -1504,8 +1686,12 @@ function menuConfirm(){
 }
 function menuBack(){
   if(screen === "setup") show("mode");
+  else if(screen === "select") show("setup");
   else if(screen === "mode") show("title");
   else if(screen === "pause") quitToTitle();
+}
+function menuMove(dx, dy){
+  if(screen === "select") moveSelect(dx, dy);
 }
 function goMode(){ show("mode"); }
 function goSetup(m){
@@ -1539,6 +1725,10 @@ function bindUI(){
   $("btn-mode-back").onclick = () => show("title");
   $("btn-setup-back").onclick = () => show("mode");
   $("btn-start").onclick = () => { unlock(); startCampaign(); };
+  if($("btn-choose")) $("btn-choose").onclick = () => { unlock(); goSelect(); };
+  if($("btn-select-back")) $("btn-select-back").onclick = () => show("setup");
+  if($("btn-select-play")) $("btn-select-play").onclick = () => { unlock(); startSelectedLevel(); };
+  if($("btn-win-choose")) $("btn-win-choose").onclick = () => { unlock(); goSelect(); };
   $("opt-off").onclick = () => { soloKind = "off"; syncSoloChoices(); };
   $("opt-helper").onclick = () => { soloKind = "helper"; syncSoloChoices(); };
   $("opt-rival").onclick = () => { soloKind = "rival"; syncSoloChoices(); };
@@ -1567,11 +1757,19 @@ function bindUI(){
     if(e.code === "Escape"){
       if(screen === "play") pause();
       else if(screen === "pause") resume();
+      else if(screen === "select") show("setup");
       else if(screen === "setup") show("mode");
       else if(screen === "mode") show("title");
     }
+    if(screen === "select"){
+      if(e.code === "ArrowLeft" || e.code === "KeyA") menuMove(-1, 0);
+      if(e.code === "ArrowRight" || e.code === "KeyD") menuMove(1, 0);
+      if(e.code === "ArrowUp" || e.code === "KeyW") menuMove(0, -1);
+      if(e.code === "ArrowDown" || e.code === "KeyS") menuMove(0, 1);
+    }
     if((e.code === "Space" || e.code === "Enter") && screen === "title") goMode();
     else if((e.code === "Space" || e.code === "Enter") && screen === "setup") startCampaign();
+    else if((e.code === "Space" || e.code === "Enter") && screen === "select") startSelectedLevel();
     else if((e.code === "Space" || e.code === "Enter") && screen === "countdown") skipIntro();
     else if((e.code === "Space" || e.code === "Enter") && screen === "results") afterResults();
     else if((e.code === "Space" || e.code === "Enter") && screen === "shop") nextLevel();
@@ -1700,6 +1898,9 @@ function snapshot(){
     starsA: buildings[0] ? starCount(0) : 0,
     starsB: buildings[1] ? starCount(1) : 0,
     campaignStars: campaignStars.slice(),
+    bestStars: [bestStars[0].slice(), bestStars[1].slice()],
+    unlockedLevels,
+    selectFocus,
     upgrades: {A: Object.assign({}, upgrades[0]), B: Object.assign({}, upgrades[1]), shared: Object.assign({}, upgrades[0])},
     players: players.map((p) => ({id:p.id, side:p.side, kind:p.kind, skill:p.skill, name:p.name, x:p.x, y:p.y, tool:p.tool, secondaryTool:p.secondaryTool||null, working:p.working, pad:p.pad, wantWork:p.wantWork, autoGrab:!!p.autoGrab, autoWork:!!p.autoWork, autoRoomId:p.autoRoomId||null, pathLen: p.path ? p.path.length : 0, speed: playerSpeed(p)})),
     rooms: allRooms().map((r) => ({
@@ -1717,6 +1918,7 @@ function snapshot(){
     modifier: (LEVELS[levelIndex] && LEVELS[levelIndex].modifier) || {},
     locks: buildings.flatMap((b) => (b.locks || []).map((L) => ({tx:L.tx, ty:L.ty, x:L.x, y:L.y, open:!!L.open, side:b.side, walk: b.walk[L.ty][L.tx]}))),
     musicBeat, musicRoot, musicUrgent: screen === "play" && timeLeft <= 15,
+    pathPreview: (wantTouch || touchModeHint()) && players.some((pl) => pl.kind === "human" && pl.path && pl.path.length),
     results
   };
 }
@@ -1747,9 +1949,15 @@ const api = {
   openLocks(side){ return openLocks(buildings[side || 0]); },
   playerSpeed(pid){ const pl = players[pid || 0]; return pl ? playerSpeed(pl) : 0; },
   matchingJob(roomId, tool){ const r = findRoom(roomId); return r ? matchingJob(r, tool, players[0]) : null; },
-  hasMod
+  hasMod,
+  goSelect, startSelectedLevel, moveSelect, updateLevelSelect,
+  step(dt){ sim(dt); if(screen === "play" || screen === "pause" || screen === "countdown") render(); },
+  saveProgress, loadProgress,
+  setProgress(data){ const d = sanitizeProgress(data || {}); campaignStars = d.campaignStars; bestStars = d.bestStars; unlockedLevels = d.unlockedLevels; saveProgress(); return d; },
+  clearProgress(){ try{ localStorage.removeItem(SAVE_KEY); }catch(err){} const d = defaultProgress(); campaignStars = d.campaignStars; bestStars = d.bestStars; unlockedLevels = d.unlockedLevels; }
 };
 if(location.search.includes("debug=1")) window.__FTB = api;
+loadProgress();
 bindUI();
 updatePadStatus();
 syncSoloChoices();
