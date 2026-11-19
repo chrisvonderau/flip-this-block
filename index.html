@@ -64,7 +64,7 @@ h2{margin:0 0 8px;font-size:clamp(22px,4vw,36px);color:var(--navy)}
 .btns{position:absolute;right:16px;bottom:18px;display:flex;gap:12px;pointer-events:auto}
 #zone-p2 .btns{right:auto;left:16px}
 .tbtn{width:72px;height:72px;border-radius:50%;border:0;font-weight:800;font-size:22px;color:#123;box-shadow:0 5px 0 #0005;pointer-events:auto}
-.tbtn.a{background:var(--foam)}.tbtn.x{background:var(--sun)}
+.tbtn.a{background:var(--foam)}.tbtn.x{background:var(--sun)}.tbtn.y{background:#F4D03F;font-size:18px}
 .tbtn:active{transform:translateY(3px);box-shadow:0 2px 0 #0005}
 #pills{position:absolute;left:10px;top:8px;display:flex;gap:8px;pointer-events:none}
 .pill{background:rgba(14,28,47,.72);color:#fff;border-radius:999px;padding:6px 10px;font-weight:800;font-size:14px;display:flex;align-items:center;gap:6px;border:2px solid rgba(255,255,255,.2)}
@@ -74,6 +74,7 @@ h2{margin:0 0 8px;font-size:clamp(22px,4vw,36px);color:var(--navy)}
 .stars{font-size:42px;letter-spacing:6px;margin:8px 0}
 .price{color:#0e6e76;font-weight:800}
 .shop-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+@media (max-width:1100px){.shop-grid{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:700px){.shop-grid{grid-template-columns:1fr}.card{padding:18px}}
 .shop-item{border:3px solid var(--line);border-radius:16px;padding:12px;background:#fff}
 .shop-item h3{margin:0 0 4px;font-size:18px}
@@ -154,6 +155,7 @@ h2{margin:0 0 8px;font-size:clamp(22px,4vw,36px);color:var(--navy)}
         <div class="zone" id="zone-p1">
           <div class="stick-base" data-pid="0"><div class="stick-knob"></div></div>
           <div class="btns">
+            <button class="tbtn y" data-pid="0" data-act="swap" hidden>Y</button>
             <button class="tbtn x" data-pid="0" data-act="work">X</button>
             <button class="tbtn a" data-pid="0" data-act="grab">A</button>
           </div>
@@ -161,6 +163,7 @@ h2{margin:0 0 8px;font-size:clamp(22px,4vw,36px);color:var(--navy)}
         <div class="zone" id="zone-p2" hidden>
           <div class="stick-base" data-pid="1"><div class="stick-knob"></div></div>
           <div class="btns">
+            <button class="tbtn y" data-pid="1" data-act="swap" hidden>Y</button>
             <button class="tbtn x" data-pid="1" data-act="work">X</button>
             <button class="tbtn a" data-pid="1" data-act="grab">A</button>
           </div>
@@ -205,6 +208,18 @@ h2{margin:0 0 8px;font-size:clamp(22px,4vw,36px);color:var(--navy)}
           <p class="price" id="price-tools">$180</p>
           <button class="btn" id="btn-buy-tools">Buy</button>
         </div>
+        <div class="shop-item" id="shop-belt">
+          <h3>Tool Belt</h3>
+          <p>Carry a second tool and swap with Y.</p>
+          <p class="price" id="price-belt">$250</p>
+          <button class="btn" id="btn-buy-belt">Buy</button>
+        </div>
+        <div class="shop-item" id="shop-vac">
+          <h3>Shop-Vac</h3>
+          <p>Clear leaks in a fifth of a second.</p>
+          <p class="price" id="price-vac">$300</p>
+          <button class="btn" id="btn-buy-vac">Buy</button>
+        </div>
       </div>
       <div id="shop-versus-note" class="hint ink" hidden>In versus, each player spends their own rent. Player 1 buys with the buttons above; Player 2 uses the second row after a swap, or we show both wallets.</div>
       <div class="row" id="shop-who" hidden>
@@ -234,21 +249,21 @@ h2{margin:0 0 8px;font-size:clamp(22px,4vw,36px);color:var(--navy)}
 "use strict";
 const TILE = 36;
 const TOOLS = ["roller","carpet","fixture","hammer","bag"];
-const TOOL_COL = {roller:"#3B82F6",carpet:"#E67E22",fixture:"#F4D03F",hammer:"#A0522D",bag:"#7F8C8D"};
+const TOOL_COL = {roller:"#3B82F6",carpet:"#E67E22",fixture:"#F4D03F",hammer:"#A0522D",bag:"#7F8C8D",key:"#F1C40F"};
 const JOB_TOOL = {paint:"roller",carpet:"carpet",lights:"fixture",patch:"hammer",debris:"bag",leak:"hammer"};
-const PRICES = {boots:[150,350,700],roller:[180,400,750],tools:[180,400,750]};
+const PRICES = {boots:[150,350,700],roller:[180,400,750],tools:[180,400,750],belt:250,vac:300};
 const JOB_ICON = {paint:"P",carpet:"C",lights:"L",patch:"H",debris:"D",leak:"W",touch:"!"};
 const LEVELS = [
-  {name:"Seafoam Lofts",time:75,cols:2,rows:1,jobs:[["debris","paint"],["debris","paint"]],leaks:0,inspector:false,rent:150,pick:0},
-  {name:"Tidewatch Annex",time:80,cols:3,rows:1,jobs:[["debris","paint"],["debris","carpet"],["paint","carpet"]],leaks:0,inspector:false,rent:160,pick:0},
-  {name:"Gullwing Plaza",time:80,cols:3,rows:1,jobs:[["debris","paint","lights"],["patch","carpet"],["paint","lights"]],leaks:0,inspector:false,rent:170,pick:0},
-  {name:"Sandbar Suites",time:85,cols:4,rows:1,jobs:[["debris","paint"],["carpet","lights"],["patch","debris"],["paint","carpet"]],leaks:0,inspector:false,rent:180,pick:0},
-  {name:"Coral Court",time:85,cols:4,rows:1,jobs:[["debris","paint","lights"],["carpet","patch"],["debris","paint"],["carpet","lights"]],leaks:1,inspector:false,rent:190,pick:0},
-  {name:"Driftwood Offices",time:90,cols:5,rows:1,jobs:[["debris","paint"],["carpet","lights"],["patch","debris","paint"],["carpet","lights"],["paint","patch"]],leaks:1,inspector:true,rent:200,pick:0.55},
-  {name:"Lantern Bay Block",time:95,cols:3,rows:2,jobs:[["debris","paint","carpet"],["lights","patch"],["debris","paint"],["carpet","lights"],["patch","debris"],["paint","carpet","lights"]],leaks:2,inspector:true,rent:210,pick:0.6},
-  {name:"Saltbreeze Hall",time:95,cols:3,rows:2,jobs:[["debris","paint","lights"],["carpet","patch","debris"],["paint","carpet"],["lights","patch"],["debris","paint","carpet"],["lights","patch"]],leaks:2,inspector:true,rent:220,pick:0.7},
-  {name:"Capstone Commons",time:100,cols:4,rows:2,jobs:[["debris","paint","carpet"],["lights","patch"],["debris","paint"],["carpet","lights","patch"],["debris","paint"],["carpet","lights"],["patch","debris","paint"]],leaks:3,inspector:true,rent:230,pick:0.75},
-  {name:"Grand Opening",time:105,cols:4,rows:2,jobs:[["debris","paint","carpet","lights"],["patch","debris","paint"],["carpet","lights","patch"],["debris","paint","carpet"],["lights","patch","debris"],["paint","carpet","lights"],["patch","debris","paint"],["carpet","lights","patch","debris"]],leaks:3,inspector:true,rent:250,pick:0.85}
+  {name:"Seafoam Lofts",time:75,cols:2,rows:1,jobs:[["debris","paint"],["debris","paint"]],leaks:0,inspector:false,rent:150,pick:0,modifier:{}},
+  {name:"Tidewatch Annex",time:80,cols:3,rows:1,jobs:[["debris","paint"],["debris","carpet"],["paint","carpet"]],leaks:0,inspector:false,rent:160,pick:0,modifier:{}},
+  {name:"Gullwing Plaza",time:80,cols:3,rows:1,jobs:[["debris","paint","lights"],["patch","carpet"],["paint","lights"]],leaks:0,inspector:false,rent:170,pick:0,modifier:{wetPaint:true}},
+  {name:"Sandbar Suites",time:85,cols:4,rows:1,jobs:[["debris","paint"],["carpet","lights"],["patch","debris"],["paint","carpet"]],leaks:0,inspector:false,rent:180,pick:0,modifier:{wetPaint:true}},
+  {name:"Coral Court",time:85,cols:4,rows:1,jobs:[["debris","paint","lights"],["carpet","patch"],["debris","paint"],["carpet","lights"]],leaks:1,inspector:false,rent:190,pick:0,modifier:{wetPaint:true,lockedWings:true}},
+  {name:"Driftwood Offices",time:90,cols:5,rows:1,jobs:[["debris","paint"],["carpet","lights"],["patch","debris","paint"],["carpet","lights"],["paint","patch"]],leaks:1,inspector:true,rent:200,pick:0.55,modifier:{wetPaint:true,lockedWings:true}},
+  {name:"Lantern Bay Block",time:95,cols:3,rows:2,jobs:[["debris","paint","carpet"],["lights","patch"],["debris","paint"],["carpet","lights"],["patch","debris"],["paint","carpet","lights"]],leaks:2,inspector:true,rent:210,pick:0.6,modifier:{wetPaint:true,lockedWings:true,jobDeps:true}},
+  {name:"Saltbreeze Hall",time:95,cols:3,rows:2,jobs:[["debris","paint","lights"],["carpet","patch","debris"],["paint","carpet"],["lights","patch"],["debris","paint","carpet"],["lights","patch"]],leaks:2,inspector:true,rent:220,pick:0.7,modifier:{wetPaint:true,lockedWings:true,jobDeps:true}},
+  {name:"Capstone Commons",time:100,cols:4,rows:2,jobs:[["debris","paint","carpet"],["lights","patch"],["debris","paint"],["carpet","lights","patch"],["debris","paint"],["carpet","lights"],["patch","debris","paint"]],leaks:3,inspector:true,rent:230,pick:0.75,modifier:{wetPaint:true,lockedWings:true,jobDeps:true}},
+  {name:"Grand Opening",time:105,cols:4,rows:2,jobs:[["debris","paint","carpet","lights"],["patch","debris","paint"],["carpet","lights","patch"],["debris","paint","carpet"],["lights","patch","debris"],["paint","carpet","lights"],["patch","debris","paint"],["carpet","lights","patch","debris"]],leaks:3,inspector:true,rent:250,pick:0.85,modifier:{wetPaint:true,lockedWings:true,jobDeps:true}}
 ];
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
@@ -256,17 +271,25 @@ const $ = (id) => document.getElementById(id);
 let screen = "title", mode = "solo", soloKind = "off", aiSkill = "medium";
 let levelIndex = 0, timeLeft = 0, timeMax = 0, speedScale = 1;
 let cash = [0,0], totalRent = [0,0], campaignStars = [0,0];
-let upgrades = [{boots:0,roller:0,tools:0},{boots:0,roller:0,tools:0}];
+let upgrades = [{boots:0,roller:0,tools:0,belt:0,vac:0},{boots:0,roller:0,tools:0,belt:0,vac:0}];
 let shopBuyer = 0, buildings = [], players = [], inspector = null;
 let particles = [], floaters = [], drops = [];
 let padsConnected = 0, rumbleLog = [], rumbleCalls = 0;
 let muted = false, unlocked = false;
 let keys = Object.create(null);
 let padPrev = [{},{}], padUIPrev = {};
-let padHold = [{grab:false,work:false,start:false,axes:[0,0]},{grab:false,work:false,start:false,axes:[0,0]}];
-let touchHold = [{x:0,y:0,grab:false,work:false,grabEdge:false},{x:0,y:0,grab:false,work:false,grabEdge:false}];
+let padHold = [{grab:false,work:false,start:false,swap:false,axes:[0,0]},{grab:false,work:false,start:false,swap:false,axes:[0,0]}];
+let touchHold = [{x:0,y:0,grab:false,work:false,grabEdge:false,swapEdge:false},{x:0,y:0,grab:false,work:false,grabEdge:false,swapEdge:false}];
 let forceWork = [false,false], countdown = 0, leakedPlanned = [], inspectorAt = -1;
 let results = null, lastTs = 0, goFlash = 0, needResize = true, waveT = 0, wantTouch = false, ended = false;
+let musicBeat = 0.22, musicRoot = 196;
+function hasMod(name){ const L = LEVELS[levelIndex]; return !!(L && L.modifier && L.modifier[name]); }
+function updateMusicPace(){
+  const urgent = (screen === "play" && timeLeft <= 15);
+  musicBeat = urgent ? 0.15 : 0.22;
+  musicRoot = urgent ? 196 * Math.pow(2, 2 / 12) : 196;
+  return urgent;
+}
 function isVersus(){ return mode === "versus" || (mode === "solo" && soloKind === "rival"); }
 
 let actx = null, master = null, musicGain = null, sfxGain = null, musicOn = false, musicStep = 0, musicTimer = 0;
@@ -337,12 +360,12 @@ const BASS = [0,0,7,7,5,5,7,7, 0,0,7,7,5,4,2,0];
 function startMusic(){
   if(!actx || musicOn) return;
   musicOn = true; musicStep = 0;
-  const beat = 0.22;
   const sched = () => {
     if(!musicOn || !actx) return;
+    const urgent = updateMusicPace();
     const t = actx.currentTime;
     const step = musicStep % 32;
-    const root = 196;
+    const root = musicRoot;
     const m = MELODY[step], b = BASS[step % 16];
     if(!muted){
       tone(root * Math.pow(2, b / 12) / 2, 0.2, "triangle", 0.07, t, musicGain);
@@ -350,7 +373,7 @@ function startMusic(){
       if(step % 2 === 0) tone(root * 4, 0.03, "square", 0.03, t, musicGain);
     }
     musicStep++;
-    musicTimer = setTimeout(sched, beat * 1000);
+    musicTimer = setTimeout(sched, musicBeat * 1000);
   };
   sched();
 }
@@ -394,6 +417,7 @@ function renderOverlay(){
 }
 
 
+
 function emptyGrid(w, h, v){
   const g = [];
   for(let y = 0; y < h; y++){ const r = []; for(let x = 0; x < w; x++) r.push(v); g.push(r); }
@@ -431,7 +455,7 @@ function buildBuilding(level, originX, originY, side){
       tx: x0 + 1, ty: y0 + 1, tw: roomW - 1, th: roomH - 1,
       x: px0, y: py0, w: (roomW - 1) * TILE, h: (roomH - 1) * TILE,
       name: "Suite " + (idx + 1),
-      jobs, rented:false, leaking:false, inspect:false, touchPending:false, rent, earned:0
+      jobs, rented:false, leaking:false, inspect:false, touchPending:false, rent, earned:0, wetT:0
     });
   }
   const n = cols * rows;
@@ -446,18 +470,37 @@ function buildBuilding(level, originX, originY, side){
     if(sy < gh && sx < gw) walk[sy][sx] = 1;
     stations.push({tool: TOOLS[i], tx:sx, ty:sy, x: originX + sx * TILE + TILE / 2, y: originY + sy * TILE + TILE / 2});
   }
+  const locks = [];
+  if(level.modifier && level.modifier.lockedWings){
+    const midCol = Math.max(1, Math.floor(cols / 2));
+    const midX = Math.min(gw - 2, Math.max(2, midCol * roomW));
+    for(let y = hallY0; y <= hallY1; y++){
+      walk[y][midX] = 2;
+      locks.push({tx:midX, ty:y, x: originX + midX * TILE + TILE / 2, y: originY + y * TILE + TILE / 2, open:false});
+    }
+    const kx = Math.max(1, midX - 2), ky = hallY0 + 1;
+    walk[ky][kx] = 1;
+    stations.push({tool:"key", tx:kx, ty:ky, x: originX + kx * TILE + TILE / 2, y: originY + ky * TILE + TILE / 2});
+  }
   const spY = hallY0 + 1;
+  let s1 = Math.floor(gw * 0.35), s2 = Math.floor(gw * 0.65);
+  if(locks.length){
+    const midX = locks[0].tx;
+    s1 = Math.max(1, Math.floor(midX * 0.35));
+    s2 = Math.max(2, Math.floor(midX * 0.65));
+  }
   const spawn = [
-    {x: originX + Math.floor(gw * 0.35) * TILE + TILE / 2, y: originY + spY * TILE + TILE / 2},
-    {x: originX + Math.floor(gw * 0.65) * TILE + TILE / 2, y: originY + spY * TILE + TILE / 2}
+    {x: originX + s1 * TILE + TILE / 2, y: originY + spY * TILE + TILE / 2},
+    {x: originX + s2 * TILE + TILE / 2, y: originY + spY * TILE + TILE / 2}
   ];
-  return {originX, originY, side, gw, gh, w: gw * TILE, h: gh * TILE, walk, roomAt, rooms, stations, spawn};
+  return {originX, originY, side, gw, gh, w: gw * TILE, h: gh * TILE, walk, roomAt, rooms, stations, spawn, locks};
 }
 function worldWalkable(b, px, py){
   const tx = Math.floor((px - b.originX) / TILE), ty = Math.floor((py - b.originY) / TILE);
   if(ty < 0 || tx < 0 || ty >= b.gh || tx >= b.gw) return false;
   return b.walk[ty][tx] === 1;
 }
+function tileWalk(b, tx, ty){ return ty >= 0 && tx >= 0 && ty < b.gh && tx < b.gw && b.walk[ty][tx] === 1; }
 function canStand(b, x, y, rad){
   const pts = [[x,y],[x-rad,y],[x+rad,y],[x,y-rad],[x,y+rad],[x-rad*0.7,y-rad*0.7],[x+rad*0.7,y-rad*0.7],[x-rad*0.7,y+rad*0.7],[x+rad*0.7,y+rad*0.7]];
   return pts.every(([px, py]) => worldWalkable(b, px, py));
@@ -512,7 +555,7 @@ function bfs(b, fromX, fromY, toX, toY){
 }
 function resetCampaign(){
   cash = [0,0]; totalRent = [0,0]; campaignStars = [0,0];
-  upgrades = [{boots:0,roller:0,tools:0},{boots:0,roller:0,tools:0}];
+  upgrades = [{boots:0,roller:0,tools:0,belt:0,vac:0},{boots:0,roller:0,tools:0,belt:0,vac:0}];
   levelIndex = 0;
 }
 function startCampaign(){ resetCampaign(); startLevel(0, true); }
@@ -531,7 +574,7 @@ function startLevel(n, withCount){
     const b = buildings[side];
     const sp = b.spawn[id % 2];
     const x = sp.x + ((id === 1 && side === 0 && !versus) ? 20 : 0);
-    players.push({id, side, kind, skill: skill || "medium", name, col, hat, x, y: sp.y, vx:0, vy:0, rad:12, tool:null, working:false, path:[], aiTimer:0, face:1, pad:-1, wantWork:false});
+    players.push({id, side, kind, skill: skill || "medium", name, col, hat, x, y: sp.y, vx:0, vy:0, rad:12, tool:null, secondaryTool:null, working:false, path:[], aiTimer:0, face:1, pad:-1, wantWork:false, autoGrab:false, autoWork:false, autoRoomId:null});
   };
   if(mode === "coop"){
     add(0, 0, "human", null, "P1", "#FF6B6B", "#1AABB8");
@@ -575,6 +618,7 @@ function updatePadStatus(){
 }
 
 
+
 function playerSpeed(p){
   const u = upgrades[p.side];
   let s = 165 * (1 + 0.18 * u.boots);
@@ -583,6 +627,8 @@ function playerSpeed(p){
     else if(p.skill === "medium") s *= 0.85;
     else s *= 1.1;
   }
+  const room = buildings[p.side] ? roomAtWorld(buildings[p.side], p.x, p.y) : null;
+  if(room && room.wetT > 0 && (u.boots || 0) < 2) s *= 0.5;
   return s;
 }
 function workRate(p, jobType){
@@ -590,6 +636,7 @@ function workRate(p, jobType){
   let r = 1 / 1.55;
   r *= (1 + 0.22 * u.tools);
   if(jobType === "paint") r *= (1 + 0.28 * u.roller);
+  if(jobType === "leak" && u.vac) r = 1 / 0.2;
   if(p.kind === "ai"){
     if(p.skill === "easy") r *= 0.6;
     else if(p.skill === "medium") r *= 0.9;
@@ -598,7 +645,59 @@ function workRate(p, jobType){
   return r;
 }
 function toolForJob(job){ return job.type === "touch" ? job.needTool : JOB_TOOL[job.type]; }
-function matchingJob(room, tool){ return room.jobs.find((j) => !j.done && toolForJob(j) === tool); }
+function matchingJob(room, tool, p){
+  return room.jobs.find((j) => {
+    if(j.done) return false;
+    const need = toolForJob(j);
+    const vacLeak = p && upgrades[p.side].vac && j.type === "leak";
+    if(need !== tool && !vacLeak) return false;
+    if(hasMod("jobDeps") && (j.type === "carpet" || j.type === "paint")){
+      if(room.jobs.some((d) => d.type === "debris" && !d.done)) return false;
+    }
+    return true;
+  });
+}
+function onPaintDone(room){
+  if(!hasMod("wetPaint") || !room) return;
+  room.wetT = 8;
+  floaters.push({x: room.x + room.w / 2, y: room.y + room.h / 2, vy:-24, life:1.1, text:"Wet paint!", col:"#5DADE2"});
+}
+function hasKey(p){ return p && (p.tool === "key" || p.secondaryTool === "key"); }
+function nearLock(p){
+  const b = buildings[p.side];
+  if(!b || !b.locks) return null;
+  let best = null, bestD = 48;
+  for(const L of b.locks){
+    if(L.open) continue;
+    const d = Math.hypot(p.x - L.x, p.y - L.y);
+    if(d < bestD){ bestD = d; best = L; }
+  }
+  return best;
+}
+function openLocks(b){
+  if(!b || !b.locks) return false;
+  let any = false;
+  for(const L of b.locks){
+    if(!L.open){ L.open = true; b.walk[L.ty][L.tx] = 1; any = true; }
+  }
+  if(any){
+    sfx("star");
+    const L = b.locks[0];
+    floaters.push({x: L.x, y: L.y - 10, vy:-24, life:1.1, text:"Unlocked!", col:"#F1C40F"});
+    rumble(0.3, 120);
+  }
+  return any;
+}
+function tryUnlock(p){
+  if(!hasKey(p) || !nearLock(p)) return false;
+  return openLocks(buildings[p.side]);
+}
+function swapTools(p){
+  if(!p || !upgrades[p.side].belt){ sfx("no"); return false; }
+  const a = p.tool; p.tool = p.secondaryTool || null; p.secondaryTool = a || null;
+  sfx("grab");
+  return true;
+}
 function roomReady(room){ return room.jobs.length > 0 && room.jobs.every((j) => j.done) && !room.leaking && !room.touchPending; }
 function tryRent(room){
   if(room.rented || !roomReady(room)) return false;
@@ -617,11 +716,14 @@ function completeJob(room, type){
   job.progress = 1; job.done = true;
   if(job.type === "leak") room.leaking = false;
   if(job.type === "touch"){ room.touchPending = false; room.inspect = false; }
+  if(job.type === "paint") onPaintDone(room);
   tryRent(room); return true;
 }
 function completeRoom(room){
+  const hadPaint = room.jobs.some((j) => j.type === "paint" && !j.done);
   for(const j of room.jobs){ j.progress = 1; j.done = true; }
   room.leaking = false; room.touchPending = false; room.inspect = false;
+  if(hadPaint) onPaintDone(room);
   tryRent(room); return true;
 }
 function spawnLeak(room){
@@ -656,9 +758,13 @@ function nearDrop(p){
   return best;
 }
 function grabDrop(p){
+  if(tryUnlock(p)) return "unlock";
   const st = nearStation(p), dp = nearDrop(p);
   if(st){
-    if(p.tool && p.tool !== st.tool) drops.push({tool:p.tool, x:p.x, y:p.y, side:p.side});
+    if(p.tool && p.tool !== st.tool){
+      if(upgrades[p.side].belt && !p.secondaryTool) p.secondaryTool = p.tool;
+      else drops.push({tool:p.tool, x:p.x, y:p.y, side:p.side});
+    }
     p.tool = st.tool; sfx("grab"); return "grab";
   }
   if(dp){
@@ -674,7 +780,7 @@ function tryWork(p, dt){
   if(!p.tool) return;
   const room = roomAtWorld(buildings[p.side], p.x, p.y);
   if(!room) return;
-  const job = matchingJob(room, p.tool);
+  const job = matchingJob(room, p.tool, p);
   if(!job) return;
   p.working = true;
   job.progress = Math.min(1, job.progress + workRate(p, job.type) * dt);
@@ -684,30 +790,78 @@ function tryWork(p, dt){
     job.done = true;
     if(job.type === "leak") room.leaking = false;
     if(job.type === "touch"){ room.touchPending = false; room.inspect = false; }
-    sfx("star"); burst(p.x, p.y - 8, TOOL_COL[p.tool], 8, "puff");
+    if(job.type === "paint") onPaintDone(room);
+    sfx("star"); burst(p.x, p.y - 8, TOOL_COL[p.tool] || "#FFD166", 8, "puff");
     rumble(0.25, 80, p.pad >= 0 ? p.pad : null);
     tryRent(room);
   }
 }
 function followPath(p, dt){
   if(!p.path || !p.path.length) return false;
-  const t = p.path[0];
-  const dx = t.x - p.x, dy = t.y - p.y, d = Math.hypot(dx, dy);
-  if(d < 8){ p.path.shift(); return true; }
-  const sp = playerSpeed(p);
-  p.vx = (dx / d) * sp; p.vy = (dy / d) * sp;
-  if(dx) p.face = dx > 0 ? 1 : -1;
+  let remain = playerSpeed(p) * dt;
+  p.vx = 0; p.vy = 0;
+  while(p.path.length && remain > 0){
+    const t = p.path[0];
+    const dx = t.x - p.x, dy = t.y - p.y, d = Math.hypot(dx, dy);
+    if(d < 8){ p.path.shift(); continue; }
+    if(dx) p.face = dx > 0 ? 1 : -1;
+    if(d <= remain){
+      p.x = t.x; p.y = t.y;
+      remain -= d;
+      p.path.shift();
+    }else{
+      p.x += dx * (remain / d);
+      p.y += dy * (remain / d);
+      remain = 0;
+    }
+  }
   return true;
+}
+function matchDist(o, p, human, b){
+  let d = Math.hypot((o.room.x + o.room.w / 2) - p.x, (o.room.y + o.room.h / 2) - p.y);
+  if(human && roomAtWorld(b, human.x, human.y) === o.room) d += 1000;
+  return d;
+}
+function nearestMatch(list, p, human, b){
+  if(!list.length) return null;
+  const copy = list.slice();
+  copy.sort((a, c) => matchDist(a, p, human, b) - matchDist(c, p, human, b));
+  return copy[0];
 }
 function aiThink(p){
   const b = buildings[p.side];
   const open = [];
   for(const r of b.rooms) for(const j of r.jobs) if(!j.done) open.push({room:r, job:j});
   if(p.skill === "easy" && Math.random() < 0.22){ p.path = []; p.wantWork = false; return; }
+  const human = (mode === "coop" || (mode === "solo" && soloKind === "helper")) ? players.find((h) => h.kind === "human" && h.side === p.side) : null;
+  if(b.locks && b.locks.some((L) => !L.open)){
+    const behind = open.some((o) => !bfs(b, p.x, p.y, o.room.x + o.room.w / 2, o.room.y + o.room.h / 2).length && roomAtWorld(b, p.x, p.y) !== o.room);
+    if(behind || open.length){
+      if(hasKey(p)){
+        if(nearLock(p)){ tryUnlock(p); return; }
+        const L = b.locks.find((x) => !x.open);
+        const adj = adjacentWalkPoint(b, L.tx, L.ty);
+        p.path = bfs(b, p.x, p.y, adj.x, adj.y);
+        p.wantWork = false;
+        return;
+      }
+      const ks = b.stations.find((s) => s.tool === "key");
+      if(ks){
+        if(Math.hypot(p.x - ks.x, p.y - ks.y) < 24){ grabDrop(p); return; }
+        p.path = bfs(b, p.x, p.y, ks.x, ks.y);
+        p.wantWork = false;
+        return;
+      }
+    }
+  }
   let target = null;
-  if(p.tool){
-    const matches = open.filter((o) => toolForJob(o.job) === p.tool);
-    target = p.skill === "hard" ? (matches.find((o) => o.job.type === "leak") || matches.find((o) => o.job.type === "touch") || matches[0]) : matches[0];
+  const usable = open.filter((o) => matchingJob(o.room, p.tool, p));
+  if(usable.length){
+    if(p.skill === "hard"){
+      target = nearestMatch(usable.filter((o) => o.job.type === "leak"), p, human, b)
+        || nearestMatch(usable.filter((o) => o.job.type === "touch"), p, human, b)
+        || nearestMatch(usable, p, human, b);
+    }else target = nearestMatch(usable, p, human, b);
   }
   if(target){
     const room = target.room;
@@ -718,13 +872,28 @@ function aiThink(p){
   }
   p.wantWork = false;
   if(!open.length){ p.path = []; return; }
-  const pick = p.skill === "easy" ? open[Math.floor(Math.random() * open.length)] : (open.find((o) => o.job.type === "leak") || open.find((o) => o.job.type === "touch") || open[0]);
+  let pool = open;
+  if(p.skill !== "easy") pool = open.filter((o) => o.job.type === "leak").concat(open.filter((o) => o.job.type === "touch")).concat(open);
+  // unique by taking nearest of preferred list without dups: prefer leak/touch then nearest
+  let pick;
+  if(p.skill === "easy") pick = open[Math.floor(Math.random() * open.length)];
+  else pick = nearestMatch(open.filter((o) => o.job.type === "leak"), p, human, b)
+    || nearestMatch(open.filter((o) => o.job.type === "touch"), p, human, b)
+    || nearestMatch(open, p, human, b);
+  if(!pick) return;
   const tool = toolForJob(pick.job);
   const st = b.stations.find((s) => s.tool === tool);
   if(st){
     if(Math.hypot(p.x - st.x, p.y - st.y) < 24){ grabDrop(p); return; }
     p.path = bfs(b, p.x, p.y, st.x, st.y);
   }
+}
+function adjacentWalkPoint(b, tx, ty){
+  for(const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+    const nx = tx + dx, ny = ty + dy;
+    if(tileWalk(b, nx, ny)) return {x: b.originX + nx * TILE + TILE / 2, y: b.originY + ny * TILE + TILE / 2};
+  }
+  return {x: b.originX + tx * TILE + TILE / 2, y: b.originY + ty * TILE + TILE / 2};
 }
 function stepInspector(dt){
   if(!inspector) return;
@@ -777,6 +946,7 @@ function stepFx(dt){
 }
 
 
+
 function humanAxes(p){
   let ix = 0, iy = 0;
   if(p.id === 0){
@@ -807,26 +977,46 @@ function humanWork(p){
   if(touchHold[p.id] && touchHold[p.id].work) return true;
   return false;
 }
+function humanSwap(p){
+  if(p.id === 0 && (keys._yEdge || keys._qEdge)) return true;
+  if(p.id === 1 && keys._yEdge2) return true;
+  if(padHold[p.id] && padHold[p.id].swap) return true;
+  if(touchHold[p.id] && touchHold[p.id].swapEdge) return true;
+  return false;
+}
 function clearEdges(){
-  keys._spaceEdge = keys._KeyEEdge = keys._enterEdge = keys._escEdge = keys._startEdge = false;
-  if(touchHold[0]) touchHold[0].grabEdge = false;
-  if(touchHold[1]) touchHold[1].grabEdge = false;
+  keys._spaceEdge = keys._KeyEEdge = keys._enterEdge = keys._escEdge = keys._startEdge = keys._yEdge = keys._qEdge = keys._yEdge2 = false;
+  if(touchHold[0]){ touchHold[0].grabEdge = false; touchHold[0].swapEdge = false; }
+  if(touchHold[1]){ touchHold[1].grabEdge = false; touchHold[1].swapEdge = false; }
   padHold[0].grab = false; padHold[1].grab = false;
   padHold[0].start = false; padHold[1].start = false;
+  padHold[0].swap = false; padHold[1].swap = false;
 }
 function sim(dt){
   if(ended) return;
   timeLeft = Math.max(0, timeLeft - dt);
+  updateMusicPace();
+  for(const r of allRooms()){ if(r.wetT > 0) r.wetT = Math.max(0, r.wetT - dt); }
   for(const p of players){
     p.vx = 0; p.vy = 0;
     const b = buildings[p.side];
     if(p.kind === "human"){
+      if(humanSwap(p)) swapTools(p);
       if(humanGrab(p)) grabDrop(p);
       const [ix, iy] = humanAxes(p);
-      const sp = playerSpeed(p);
-      p.vx = ix * sp; p.vy = iy * sp;
-      if(ix) p.face = ix > 0 ? 1 : -1;
-      if(humanWork(p)) tryWork(p, dt);
+      if(ix || iy){
+        p.path = []; p.autoGrab = false; p.autoWork = false; p.autoRoomId = null;
+        const sp = playerSpeed(p);
+        p.vx = ix * sp; p.vy = iy * sp;
+        if(ix) p.face = ix > 0 ? 1 : -1;
+      }else if(p.path && p.path.length){
+        followPath(p, dt);
+      }else if(p.autoGrab){
+        grabDrop(p);
+        p.autoGrab = false;
+      }
+      const inTarget = p.autoWork && (!p.autoRoomId || (roomAtWorld(b, p.x, p.y) && roomAtWorld(b, p.x, p.y).id === p.autoRoomId) || roomAtWorld(b, p.x, p.y));
+      if(humanWork(p) || (p.autoWork && roomAtWorld(b, p.x, p.y) && (!p.autoRoomId || roomAtWorld(b, p.x, p.y).id === p.autoRoomId) && matchingJob(roomAtWorld(b, p.x, p.y), p.tool, p))) tryWork(p, dt);
     }else{
       p.aiTimer -= dt;
       if(p.aiTimer <= 0){ aiThink(p); p.aiTimer = p.skill === "easy" ? 0.55 : 0.28; }
@@ -920,18 +1110,23 @@ function showWin(){
   show("win");
 }
 function nextLevel(){ startLevel(levelIndex + 1, true); }
-function priceOf(kind, side){ const tier = upgrades[side][kind]; return tier >= 3 ? null : PRICES[kind][tier]; }
+function priceOf(kind, side){
+  const val = PRICES[kind], tier = upgrades[side][kind] || 0;
+  if(val == null) return null;
+  if(Array.isArray(val)) return tier >= val.length ? null : val[tier];
+  return tier >= 1 ? null : val;
+}
 function buyUpgrade(kind, side){
   side = side == null ? (isVersus() ? shopBuyer : 0) : side;
   const price = priceOf(kind, side);
   if(price == null || cash[side] < price){ sfx("no"); return false; }
-  cash[side] -= price; upgrades[side][kind]++; sfx("buy"); updateShop(); updateHud(); return true;
+  cash[side] -= price; upgrades[side][kind]++; sfx("buy"); updateShop(); updateHud(); layoutTouch(); return true;
 }
 function aiShop(){
   const ai = players.find((p) => p.kind === "ai");
   if(!ai) return;
   const side = ai.side;
-  const order = ai.skill === "hard" ? ["tools","boots","roller"] : (ai.skill === "medium" ? ["boots","tools","roller"] : ["roller"]);
+  const order = ai.skill === "hard" ? ["vac","belt","tools","boots","roller"] : (ai.skill === "medium" ? ["belt","boots","tools","roller"] : ["roller"]);
   let buys = 0, maxBuys = ai.skill === "hard" ? 3 : (ai.skill === "medium" ? 1 : (Math.random() < 0.4 ? 1 : 0));
   for(const kind of order){
     while(buys < maxBuys){
@@ -948,11 +1143,12 @@ function updateShop(){
   $("shop-p0").classList.toggle("on", shopBuyer === 0);
   $("shop-p1").classList.toggle("on", shopBuyer === 1);
   const side = vs ? shopBuyer : 0;
-  $("shop-cash").textContent = (vs ? ("Player " + (side + 1) + " wallet: $") : "Wallet: $") + cash[side] + ". Faster boots, a bigger roller, and quicker tools, up to three tiers each.";
-  for(const kind of ["boots","roller","tools"]){
-    const pr = priceOf(kind, side), el = $("price-" + kind), btn = $("btn-buy-" + kind), tier = upgrades[side][kind];
-    if(pr == null){ el.textContent = "Maxed (tier 3)"; btn.disabled = true; btn.textContent = "Max"; }
-    else { el.textContent = "$" + pr + "  ·  tier " + tier + " → " + (tier + 1); btn.disabled = cash[side] < pr; btn.textContent = "Buy"; }
+  $("shop-cash").textContent = (vs ? ("Player " + (side + 1) + " wallet: $") : "Wallet: $") + cash[side] + ". Faster boots, a bigger roller, quicker tools, a tool belt, and a shop-vac.";
+  for(const kind of ["boots","roller","tools","belt","vac"]){
+    const pr = priceOf(kind, side), el = $("price-" + kind), btn = $("btn-buy-" + kind), tier = upgrades[side][kind] || 0;
+    if(!el || !btn) continue;
+    if(pr == null){ el.textContent = Array.isArray(PRICES[kind]) ? "Maxed (tier 3)" : "Owned"; btn.disabled = true; btn.textContent = "Owned"; }
+    else { el.textContent = Array.isArray(PRICES[kind]) ? ("$" + pr + "  ·  tier " + tier + " → " + (tier + 1)) : ("$" + pr); btn.disabled = cash[side] < pr; btn.textContent = "Buy"; }
   }
 }
 function pause(){ if(screen !== "play") return; sfx("pause"); show("pause"); }
@@ -987,7 +1183,7 @@ function updateHud(){
     $("hud-rooms").textContent = buildings[0].rooms.filter((r) => r.rented).length + "/" + buildings[0].rooms.length + " rented";
     $("hud-stars").textContent = starText(starCount(0));
   }
-  $("pills").innerHTML = players.map((p) => '<div class="pill"><span style="width:12px;height:12px;border-radius:50%;background:' + p.hat + ';display:inline-block"></span>' + p.name + " · " + (p.tool ? p.tool : "empty") + "</div>").join("");
+  $("pills").innerHTML = players.map((p) => '<div class="pill"><span style="width:12px;height:12px;border-radius:50%;background:' + p.hat + ';display:inline-block"></span>' + p.name + " · " + (p.tool ? p.tool : "empty") + (p.secondaryTool ? (" / " + p.secondaryTool) : "") + "</div>").join("");
 }
 function layoutTouch(){
   const touch = $("touch");
@@ -998,8 +1194,15 @@ function layoutTouch(){
   touch.classList.toggle("split", split);
   $("zone-p2").hidden = !split;
   $("zone-p1").style.width = split ? "50%" : "100%";
+  for(const el of document.querySelectorAll(".tbtn.y")){
+    const pid = +el.dataset.pid;
+    const pl = players[pid];
+    const side = pl ? pl.side : 0;
+    el.hidden = !(showT && upgrades[side] && upgrades[side].belt);
+  }
 }
 function touchModeHint(){ return wantTouch || ("ontouchstart" in window && Math.min(window.innerWidth, window.innerHeight) < 1200); }
+
 
 
 function resize(){
@@ -1092,22 +1295,61 @@ function drawBuilding(b){
   roundRect(b.originX - 10, b.originY - 18, b.w + 20, b.h + 28, 10); ctx.fill();
   ctx.fillStyle = "#C0392B";
   roundRect(b.originX - 16, b.originY - 28, b.w + 32, 18, 6); ctx.fill();
+  function roomFloor(room){
+    const carpetJob = room.jobs.find((j) => j.type === "carpet");
+    if(carpetJob && !carpetJob.done) return "#95A5A6";
+    if(room.leaking) return "#C5D8E8";
+    if(room.rented) return "#D4F0E0";
+    return "#D9A066";
+  }
   for(let y = 0; y < b.gh; y++){
     for(let x = 0; x < b.gw; x++){
       if(b.walk[y][x] !== 1) continue;
       const px = b.originX + x * TILE, py = b.originY + y * TILE;
       const ri = b.roomAt[y][x];
-      if(ri >= 0){ const room = b.rooms[ri]; ctx.fillStyle = room.rented ? "#D4F0E0" : (room.leaking ? "#C5D8E8" : "#E8D5B5"); }
+      if(ri >= 0) ctx.fillStyle = roomFloor(b.rooms[ri]);
       else ctx.fillStyle = "#D9C4A0";
       ctx.fillRect(px + 0.5, py + 0.5, TILE - 1, TILE - 1);
     }
   }
   ctx.fillStyle = "#4A3B2F";
   for(let y = 0; y < b.gh; y++) for(let x = 0; x < b.gw; x++){
-    if(b.walk[y][x] === 1) continue;
+    if(b.walk[y][x] === 1 || b.walk[y][x] === 2) continue;
     ctx.fillRect(b.originX + x * TILE, b.originY + y * TILE, TILE, TILE);
   }
+  if(b.locks){
+    for(const L of b.locks){
+      if(L.open) continue;
+      const px = b.originX + L.tx * TILE, py = b.originY + L.ty * TILE;
+      ctx.fillStyle = "#8E6B23";
+      ctx.fillRect(px, py, TILE, TILE);
+      ctx.fillStyle = "#F1C40F";
+      ctx.fillRect(px + 8, py + 10, TILE - 16, TILE - 20);
+    }
+  }
   for(const room of b.rooms){
+    const debrisOpen = room.jobs.some((j) => j.type === "debris" && !j.done);
+    if(debrisOpen){
+      let seed = (room.idx + 1) * 997 + room.side * 13;
+      const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+      ctx.fillStyle = "#6B3F2A";
+      for(let i = 0; i < 4; i++){
+        const cx = room.x + 18 + rnd() * (room.w - 36);
+        const cy = room.y + 48 + rnd() * (room.h - 70);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + 8 + rnd() * 8, cy + 2);
+        ctx.lineTo(cx + 10 + rnd() * 6, cy + 10 + rnd() * 6);
+        ctx.lineTo(cx - 2, cy + 12 + rnd() * 4);
+        ctx.lineTo(cx - 8 - rnd() * 4, cy + 5);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+    if(room.wetT > 0){
+      ctx.fillStyle = "rgba(93, 173, 226, 0.28)";
+      ctx.fillRect(room.x, room.y, room.w, room.h);
+    }
     ctx.fillStyle = "rgba(111, 196, 214, 0.85)";
     ctx.fillRect(room.x + 8, room.y + 6, 14, 12);
     ctx.fillRect(room.x + 28, room.y + 6, 14, 12);
@@ -1140,6 +1382,11 @@ function drawBuilding(b){
       ctx.fillStyle = "rgba(52, 152, 219, 0.35)";
       ctx.beginPath(); ctx.ellipse(room.x + room.w / 2, room.y + room.h - 12, 22, 8, 0, 0, 6.28); ctx.fill();
     }
+    const lightsJob = room.jobs.find((j) => j.type === "lights");
+    if(lightsJob && !lightsJob.done){
+      ctx.fillStyle = "rgba(14, 28, 47, 0.35)";
+      ctx.fillRect(room.x, room.y, room.w, room.h);
+    }
   }
   for(const s of b.stations){
     ctx.fillStyle = TOOL_COL[s.tool];
@@ -1148,7 +1395,7 @@ function drawBuilding(b){
     ctx.fillStyle = "#0E1C2F";
     ctx.font = "bold 10px Trebuchet MS, sans-serif";
     ctx.textAlign = "center";
-    const label = {roller:"Paint", carpet:"Carpet", fixture:"Lights", hammer:"Hammer", bag:"Debris"};
+    const label = {roller:"Paint", carpet:"Carpet", fixture:"Lights", hammer:"Hammer", bag:"Debris", key:"Key"};
     ctx.fillText(label[s.tool], s.x, s.y + 26);
     ctx.fillStyle = "#FFF8EA";
     ctx.font = "bold 11px Trebuchet MS, sans-serif";
@@ -1204,12 +1451,13 @@ function drawInspector(){
 }
 
 
+
 function pollPads(){
   const gps = navigator.getGamepads ? navigator.getGamepads() : [];
   let n = 0;
   for(const gp of gps) if(gp && gp.connected) n++;
   if(n !== padsConnected){ padsConnected = n; assignPads(); }
-  for(let i = 0; i < 2; i++){ padHold[i].axes = [0, 0]; padHold[i].work = false; padHold[i].grab = false; padHold[i].start = false; }
+  for(let i = 0; i < 2; i++){ padHold[i].axes = [0, 0]; padHold[i].work = false; padHold[i].grab = false; padHold[i].start = false; padHold[i].swap = false; }
   for(const p of players){
     if(p.kind !== "human" || p.pad < 0) continue;
     const gp = gps[p.pad];
@@ -1217,13 +1465,14 @@ function pollPads(){
     const prev = padPrev[p.id] || {};
     const a = !!(gp.buttons[0] && gp.buttons[0].pressed);
     const x = !!(gp.buttons[2] && gp.buttons[2].pressed);
+    const y = !!(gp.buttons[3] && gp.buttons[3].pressed);
     const st = !!((gp.buttons[9] && gp.buttons[9].pressed) || (gp.buttons[8] && gp.buttons[8].pressed));
     const ax = gp.axes[0] || 0, ay = gp.axes[1] || 0;
     const dx = (gp.buttons[15] && gp.buttons[15].pressed ? 1 : 0) + (gp.buttons[14] && gp.buttons[14].pressed ? -1 : 0);
     const dy = (gp.buttons[13] && gp.buttons[13].pressed ? 1 : 0) + (gp.buttons[12] && gp.buttons[12].pressed ? -1 : 0);
-    padHold[p.id] = {grab: a && !prev.a, work: x, start: st && !prev.st, axes: [Math.abs(ax) > 0.28 ? ax : dx, Math.abs(ay) > 0.28 ? ay : dy]};
-    padPrev[p.id] = {a, x, st};
-    if(a || x || st) unlock();
+    padHold[p.id] = {grab: a && !prev.a, work: x, start: st && !prev.st, swap: y && !prev.y, axes: [Math.abs(ax) > 0.28 ? ax : dx, Math.abs(ay) > 0.28 ? ay : dy]};
+    padPrev[p.id] = {a, x, st, y};
+    if(a || x || st || y) unlock();
   }
   let first = null;
   for(const gp of gps){ if(gp && gp.connected){ first = gp; break; } }
@@ -1302,6 +1551,8 @@ function bindUI(){
   $("btn-buy-boots").onclick = () => buyUpgrade("boots");
   $("btn-buy-roller").onclick = () => buyUpgrade("roller");
   $("btn-buy-tools").onclick = () => buyUpgrade("tools");
+  if($("btn-buy-belt")) $("btn-buy-belt").onclick = () => buyUpgrade("belt");
+  if($("btn-buy-vac")) $("btn-buy-vac").onclick = () => buyUpgrade("vac");
   $("shop-p0").onclick = () => { shopBuyer = 0; updateShop(); };
   $("shop-p1").onclick = () => { shopBuyer = 1; updateShop(); };
   $("btn-again").onclick = () => show("mode");
@@ -1311,6 +1562,7 @@ function bindUI(){
     keys[e.code] = true;
     if(e.code === "Space"){ keys._spaceEdge = true; e.preventDefault(); }
     if(e.code === "KeyE") keys._KeyEEdge = true;
+    if(e.code === "KeyY" || e.code === "KeyQ") keys._yEdge = true;
     if(e.code === "Enter"){ keys._enterEdge = true; if(screen !== "play") e.preventDefault(); }
     if(e.code === "Escape"){
       if(screen === "play") pause();
@@ -1330,8 +1582,65 @@ function bindUI(){
   window.addEventListener("gamepaddisconnected", () => { assignPads(); updatePadStatus(); });
   window.addEventListener("resize", () => { needResize = true; layoutTouch(); });
   window.addEventListener("pointerdown", unlock, {passive:true});
-  $("stage-wrap").addEventListener("pointerdown", () => { if(screen === "countdown") skipIntro(); });
+  $("stage-wrap").addEventListener("pointerdown", (e) => {
+    if(screen === "countdown") skipIntro();
+    if(screen !== "play") return;
+    if(e.target.closest && e.target.closest(".stick-base, .tbtn, .btns")) return;
+    const humans = players.filter((pl) => pl.kind === "human").length;
+    if(!(wantTouch || touchModeHint()) || humans > 1) return;
+    const w = screenToWorld(e.clientX, e.clientY);
+    if(!w) return;
+    handleTapWorld(w.x, w.y, 0);
+  });
   bindTouch();
+}
+function screenToWorld(clientX, clientY){
+  const rect = canvas.getBoundingClientRect();
+  if(rect.width < 1 || rect.height < 1) return null;
+  const sx = (clientX - rect.left) * (canvas.width / rect.width);
+  const sy = (clientY - rect.top) * (canvas.height / rect.height);
+  const v = view();
+  return {x: (sx - v.ox) / v.scale, y: (sy - v.oy) / v.scale};
+}
+function handleTapWorld(wx, wy, pid){
+  const pl = players[pid];
+  if(!pl) return false;
+  const b = buildings[pl.side];
+  if(!b) return false;
+  pl.autoGrab = false; pl.autoWork = false; pl.autoRoomId = null;
+  let best = null, bestD = 32;
+  for(const st of b.stations){
+    const d = Math.hypot(wx - st.x, wy - st.y);
+    if(d < bestD){ bestD = d; best = st; }
+  }
+  if(best){
+    pl.path = bfs(b, pl.x, pl.y, best.x, best.y);
+    pl.autoGrab = true;
+    return "station";
+  }
+  if(b.locks){
+    for(const L of b.locks){
+      if(L.open) continue;
+      if(Math.hypot(wx - L.x, wy - L.y) < 48){
+        const adj = adjacentWalkPoint(b, L.tx, L.ty);
+        pl.path = bfs(b, pl.x, pl.y, adj.x, adj.y);
+        pl.autoGrab = true;
+        return "lock";
+      }
+    }
+  }
+  const room = roomAtWorld(b, wx, wy);
+  if(room){
+    pl.path = bfs(b, pl.x, pl.y, room.x + room.w / 2, room.y + room.h / 2);
+    pl.autoWork = true;
+    pl.autoRoomId = room.id;
+    return "room";
+  }
+  if(worldWalkable(b, wx, wy)){
+    pl.path = bfs(b, pl.x, pl.y, wx, wy);
+    return "floor";
+  }
+  return false;
 }
 function bindTouch(){
   for(const base of document.querySelectorAll(".stick-base")){
@@ -1353,7 +1662,7 @@ function bindTouch(){
   }
   for(const btn of document.querySelectorAll(".tbtn")){
     const pid = +btn.dataset.pid, act = btn.dataset.act;
-    const down = (e) => { unlock(); if(act === "grab") touchHold[pid].grabEdge = true; if(act === "work") touchHold[pid].work = true; e.preventDefault(); };
+    const down = (e) => { unlock(); if(act === "grab") touchHold[pid].grabEdge = true; if(act === "work") touchHold[pid].work = true; if(act === "swap") touchHold[pid].swapEdge = true; e.preventDefault(); };
     const up = () => { if(act === "work") touchHold[pid].work = false; };
     btn.addEventListener("pointerdown", down);
     btn.addEventListener("pointerup", up);
@@ -1392,10 +1701,10 @@ function snapshot(){
     starsB: buildings[1] ? starCount(1) : 0,
     campaignStars: campaignStars.slice(),
     upgrades: {A: Object.assign({}, upgrades[0]), B: Object.assign({}, upgrades[1]), shared: Object.assign({}, upgrades[0])},
-    players: players.map((p) => ({id:p.id, side:p.side, kind:p.kind, skill:p.skill, name:p.name, x:p.x, y:p.y, tool:p.tool, working:p.working, pad:p.pad, wantWork:p.wantWork})),
+    players: players.map((p) => ({id:p.id, side:p.side, kind:p.kind, skill:p.skill, name:p.name, x:p.x, y:p.y, tool:p.tool, secondaryTool:p.secondaryTool||null, working:p.working, pad:p.pad, wantWork:p.wantWork, autoGrab:!!p.autoGrab, autoWork:!!p.autoWork, autoRoomId:p.autoRoomId||null, pathLen: p.path ? p.path.length : 0, speed: playerSpeed(p)})),
     rooms: allRooms().map((r) => ({
       id:r.id, side:r.side, rented:r.rented, leaking:r.leaking, inspect:r.inspect, touchPending:r.touchPending,
-      rent:r.rent, earned:r.earned,
+      rent:r.rent, earned:r.earned, wetT: r.wetT || 0,
       jobs: r.jobs.map((j) => ({type:j.type, progress:j.progress, done:j.done, needTool:j.needTool || null}))
     })),
     stations: buildings.flatMap((b) => b.stations.map((s) => ({tool:s.tool, x:s.x, y:s.y, side:b.side}))),
@@ -1404,19 +1713,23 @@ function snapshot(){
     leakCount: allRooms().filter((r) => r.leaking).length,
     pads: padsConnected, rumbleCalls, rumbleLog: rumbleLog.length,
     muted, unlocked, touch: wantTouch, countdown, ended,
-    shop: {buyer: shopBuyer, boots: priceOf("boots", isVersus() ? shopBuyer : 0), roller: priceOf("roller", isVersus() ? shopBuyer : 0), tools: priceOf("tools", isVersus() ? shopBuyer : 0)},
+    shop: {buyer: shopBuyer, boots: priceOf("boots", isVersus() ? shopBuyer : 0), roller: priceOf("roller", isVersus() ? shopBuyer : 0), tools: priceOf("tools", isVersus() ? shopBuyer : 0), belt: priceOf("belt", isVersus() ? shopBuyer : 0), vac: priceOf("vac", isVersus() ? shopBuyer : 0)},
+    modifier: (LEVELS[levelIndex] && LEVELS[levelIndex].modifier) || {},
+    locks: buildings.flatMap((b) => (b.locks || []).map((L) => ({tx:L.tx, ty:L.ty, x:L.x, y:L.y, open:!!L.open, side:b.side, walk: b.walk[L.ty][L.tx]}))),
+    musicBeat, musicRoot, musicUrgent: screen === "play" && timeLeft <= 15,
     results
   };
 }
-window.__FTB = {
+const api = {
   get: snapshot,
   setTouch(on){ wantTouch = !!on; layoutTouch(); },
   setMode(m){ mode = m; },
   setSolo(kind, skill){ if(kind != null) soloKind = kind; if(skill != null) aiSkill = skill; syncSoloChoices(); },
   startCampaign, startLevel, skipIntro,
-  setTime(t){ timeLeft = t; updateHud(); },
+  setTime(t){ timeLeft = t; updateMusicPace(); updateHud(); },
   setSpeed(s){ speedScale = s; },
   giveTool(pid, tool){ const p = players[pid]; if(p) p.tool = tool || null; },
+  giveSecondary(pid, tool){ const p = players[pid]; if(p) p.secondaryTool = tool || null; },
   placePlayer(pid, x, y){ const p = players[pid]; if(!p) return; if(typeof x === "string"){ const r = findRoom(x); if(r){ p.x = r.x + r.w / 2; p.y = r.y + r.h / 2; p.side = r.side; } return; } p.x = x; p.y = y; },
   placeInRoom(pid, roomId){ const p = players[pid], r = findRoom(roomId); if(p && r){ p.x = r.x + r.w / 2; p.y = r.y + r.h / 2; p.side = r.side; } },
   holdWork(pid, on){ forceWork[pid] = !!on; },
@@ -1426,8 +1739,17 @@ window.__FTB = {
   spawnInspector(roomId){ return spawnInspector(roomId ? findRoom(roomId) : (buildings[0] && buildings[0].rooms[0])); },
   buyUpgrade, addCash(amount, side){ cash[side || 0] += amount; updateHud(); updateShop(); },
   pause, resume, endLevel, quitToTitle, goMode, goSetup, show, setMuted,
-  levels: LEVELS
+  levels: LEVELS,
+  tapWorld(x, y, pid){ return handleTapWorld(x, y, pid || 0); },
+  grab(pid){ const pl = players[pid || 0]; return pl ? grabDrop(pl) : null; },
+  view,
+  screenToWorld, swapTool(pid){ const pl = players[pid || 0]; return pl ? swapTools(pl) : false; },
+  openLocks(side){ return openLocks(buildings[side || 0]); },
+  playerSpeed(pid){ const pl = players[pid || 0]; return pl ? playerSpeed(pl) : 0; },
+  matchingJob(roomId, tool){ const r = findRoom(roomId); return r ? matchingJob(r, tool, players[0]) : null; },
+  hasMod
 };
+if(location.search.includes("debug=1")) window.__FTB = api;
 bindUI();
 updatePadStatus();
 syncSoloChoices();
